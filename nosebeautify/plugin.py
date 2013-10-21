@@ -17,6 +17,10 @@ class BeautifyPlugin(Plugin):
     # clobbering other plugin's stream handling.
     score = 10
 
+    def __init__(self, logformatter=None):
+        super(BeautifyPlugin, self).__init__()
+        self.formatter = logformatter
+
     def addOptions(self, parser, env=os.environ):
         """Add command-line options for this plugin"""
         parser.add_option('--beautify',
@@ -33,6 +37,8 @@ class BeautifyPlugin(Plugin):
         return ColorizingStream(stream)
 
     def begin(self):
+        if self.formatter is not None:
+            monkeypatches.set_formatter(self.formatter)
         monkeypatches.patcher.enable()
 
     def finalize(self, result):

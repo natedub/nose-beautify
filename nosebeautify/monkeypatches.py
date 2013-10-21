@@ -14,6 +14,12 @@ from nosebeautify import util
 
 patcher = util.MonkeyPatcher()
 
+_formatter = None
+
+def set_formatter(formatter):
+    global _formatter
+    _formatter = formatter
+
 
 @patcher.method(FailureDetail)
 def formatFailure(self, test, err):
@@ -27,7 +33,10 @@ def formatFailure(self, test, err):
 @patcher.method(LogCapture)
 def setupLoghandler(self):
     patcher.original(self).setupLoghandler()
-    formatter = FancyFormatter(self.logformat, self.logdatefmt)
+    if _formatter:
+        formatter = _formatter
+    else:
+        formatter = FancyFormatter(self.logformat, self.logdatefmt)
     self.handler.setFormatter(formatter)
 
 
