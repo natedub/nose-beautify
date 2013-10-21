@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='nose-beautify',
-    version='0.5.0',
+    version='0.1.0',
     description='Colorize your test results with Pygments for readable tracebacks and SQLAlchemy queries.',
     author='Nathan Wright',
     author_email='thatnateguy@gmail.com',
