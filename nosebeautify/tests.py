@@ -8,5 +8,6 @@ class TestFailure(unittest.TestCase):
         pass
 
     def test_fail(self):
-        log.info('this too')
-        print 'output'
+        log.info('Example log message')
+        print 'Example stdio'
+        self.fail('This failure is intentional')
