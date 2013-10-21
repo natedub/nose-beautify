@@ -3,26 +3,21 @@ import logging
 
 from nose.plugins import Plugin
 
-import sys
-try:
-    import ipdb as pdb
-except ImportError:
-    import pdb
-def pdb_excepthook(type, value, traceback):
-    pdb.post_mortem(traceback)
-sys.excepthook = pdb_excepthook
-
 from nosebeautify import color
 from nosebeautify import monkeypatches
 
 log = logging.getLogger(__name__)
 
+
 class BeautifyPlugin(Plugin):
 
     name = 'beautify'
-    score = 10 ** 5
 
-    def add_options(self, parser, env=os.environ):
+    # Run this plugin late to avoid our setOutputStream method
+    # clobbering other plugin's stream handling.
+    score = 10
+
+    def addOptions(self, parser, env=os.environ):
         """Add command-line options for this plugin"""
         parser.add_option('--beautify',
                           dest='beautify',
@@ -38,12 +33,11 @@ class BeautifyPlugin(Plugin):
         return ColorizingStream(stream)
 
     def begin(self):
-        return
         monkeypatches.patcher.enable()
 
     def finalize(self, result):
-        return
         monkeypatches.patcher.disable()
+
 
 class ColorizingStream(object):
     def __init__(self, stream):
@@ -70,10 +64,15 @@ class ColorizingStream(object):
         'unexpected success': color.white,
     }
 
+    def error_heading(string):
+        error_flavor, description = string.split(':', 1)
+        return ''.join([
+            color.magenta(error_flavor), ':', color.white(description),
+        ])
+
     startswith = [
-        ('skipped ', None),
-        ('FAIL: ', None),
-        ('ERROR: ', None),
+        ('FAIL: ', error_heading),
+        ('ERROR: ', error_heading),
     ]
 
     def colorize(self, string):
@@ -88,6 +87,10 @@ class ColorizingStream(object):
         return string
 
     def write(self, string):
-        print type(string), string
         colorized = self.colorize(string)
         self.stream.write(colorized)
+
+    def writeln(self, string=None):
+        if string:
+            self.write(string)
+        self.stream.write('\n')

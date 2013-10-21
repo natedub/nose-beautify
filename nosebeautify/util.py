@@ -1,3 +1,7 @@
+import collections
+import functools
+
+
 def monkeypatch_method(cls):
     """MonkeyPatching decorator.
 
@@ -14,6 +18,7 @@ def monkeypatch_method(cls):
         return func
     return decorator
 
+
 # Alternate idea for monkeypatching... this would allow us to enable
 # the monkeypatches on demand, and revert afterwards.
 
@@ -21,28 +26,47 @@ class MonkeyPatcher(object):
 
     def __init__(self):
         self._patches = []
-        self.originals = {}
+        self._classes = collections.defaultdict(dict)
+        self._originals = {}
 
     def method(self, cls):
         def decorator(func):
-            self._patches.append((cls, func.__name__, func))
+            name = func.__name__
+            self._patches.append((cls, name, func))
+            # TODO: This ought to be loaded on enable()
+            self._classes[cls][name] = getattr(cls, name)
             return func
         return decorator
 
     def register(self, obj, attr, value):
         self._patches.append((obj, attr, value))
 
+    def original(self, obj):
+        class_ = obj.__class__
+        methods = self._classes[class_]
+        return _MonkeyProxy(obj, methods)
+
     def enable(self):
         for obj, attr, value in self._patches:
             orig = getattr(obj, attr)
             setattr(obj, attr, value)
-            try:
-                value.orig = orig
-            except AttributeError:
-                pass
-            self.originals[(obj, attr)] = orig
+            self._originals[(obj, attr)] = orig
 
     def disable(self):
         for obj, attr, value in self._patches:
-            orig = self.originals[(obj, attr)]
+            orig = self._originals[(obj, attr)]
             setattr(obj, attr, orig)
+
+
+class _MonkeyProxy(object):
+    def __init__(self, obj, methods):
+        self._obj = obj
+        self._methods = methods
+
+    def __getattr__(self, attr):
+        try:
+            method = self._methods[attr]
+        except KeyError:
+            import ipdb; ipdb.set_trace()
+            raise AttributeError(attr)
+        return functools.partial(method, self._obj)

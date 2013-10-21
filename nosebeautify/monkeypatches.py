@@ -1,33 +1,53 @@
+from fancyformatter import FancyFormatter
+from nose.plugins.capture import Capture
 from nose.plugins.failuredetail import FailureDetail
 from nose.plugins.logcapture import LogCapture
 from nose.result import TextTestResult
+from nose.util import safe_str
+from pygments import highlight
+from pygments.formatters import TerminalFormatter
+from pygments.lexers import PythonTracebackLexer
 
-from nosebeautify import logs
+from nosebeautify import color
 from nosebeautify import util
-from nosebeautify import format
+
 
 patcher = util.MonkeyPatcher()
+
 
 @patcher.method(FailureDetail)
 def formatFailure(self, test, err):
     """Add detail from traceback inspection to error message of a failure.
     """
-    orig_method = patcher.originals[(FailureDetail, 'formatFailure')]
-    ec, exc_text, tb = orig_method(self, test, err)
+    ec, exc_text, tb = patcher.original(self).formatFailure(test, err)
     exc_text = format.highlight_tb(exc_text)
     return (ec, exc_text, tb)
 
+
 @patcher.method(LogCapture)
 def setupLoghandler(self):
-    original_method = patcher.originals[(LogCapture, 'setupLoghandler')]
-    original_method(self)
-    formatter = logs.ColorizingFormatter(self.logformat, self.logdatefmt)
+    patcher.original(self).setupLoghandler()
+    formatter = FancyFormatter(self.logformat, self.logdatefmt)
     self.handler.setFormatter(formatter)
+
+
+@patcher.method(Capture)
+@patcher.method(LogCapture)
+def addCaptureToErr(self, ev, records):
+    result = patcher.original(self).addCaptureToErr(ev, records)
+    ev = safe_str(ev)
+    added_lines = result[len(ev):].split('\n')
+    added_lines[1] = color.green(added_lines[1], bold=True)
+    added_lines[-1] = color.green(added_lines[-1], bold=True)
+    return ev + '\n'.join(added_lines)
+
+
+python_traceback_lexer = PythonTracebackLexer()
+terminal_formatter = TerminalFormatter()
+
 
 @patcher.method(TextTestResult)
 def _exc_info_to_string(self, err, test=None):
     exc_text = super(TextTestResult, self)._exc_info_to_string(err, test)
-    exc_text = format.highlight_tb(exc_text)
+    exc_text = highlight(exc_text, python_traceback_lexer, terminal_formatter)
     return exc_text
-
-patcher.enable()

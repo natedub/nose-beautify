@@ -17,12 +17,11 @@ setup(
 
     install_requires=[
         'Pygments',
+        'fancyformatter',
+        'pygments-pprint-sql',
     ],
 
-    packages=find_packages(exclude=['ez_setup']),
-    include_package_data=True,
-    package_data={'mediacore': ['i18n/*/LC_MESSAGES/*.mo']},
-    zip_safe=False,
+    packages=find_packages(),
 
     entry_points="""
     [nose.plugins.0.10]
