@@ -1,5 +1,6 @@
-import os
+import functools
 import logging
+import os
 
 from nose.plugins import Plugin
 
@@ -65,7 +66,7 @@ class ColorizingStream(object):
         'FAILED': color.red,
         '=' * 70: color.white,
         '-' * 70: color.white,
-        ' ... ': color.green,
+        ' ... ': functools.partial(color.green, bold=True),
         'expected failure': color.white,
         'unexpected success': color.white,
     }
