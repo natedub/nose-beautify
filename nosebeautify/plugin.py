@@ -18,9 +18,11 @@ class BeautifyPlugin(Plugin):
     # clobbering other plugin's stream handling.
     score = 10
 
-    def __init__(self, logformatter=None):
+    def __init__(self, logformatter=None, enabled=False):
         super(BeautifyPlugin, self).__init__()
         self.formatter = logformatter
+        if enabled:
+            self.enabled = True
 
     def addOptions(self, parser, env=os.environ):
         """Add command-line options for this plugin"""
